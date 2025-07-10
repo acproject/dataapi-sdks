@@ -61,6 +61,12 @@ set(SOURCES
     src/HttpClient.cpp
     src/ClientConfig.cpp
     src/Types.cpp
+    src/types/CommonTypes.cpp
+    src/types/AiTypes.cpp
+    src/types/UserTypes.cpp
+    src/types/ProjectTypes.cpp
+    src/types/DatabaseTypes.cpp
+    src/types/WorkflowTypes.cpp
     src/auth/AuthenticationProvider.cpp
     src/auth/BasicAuthProvider.cpp
     src/client/WorkflowClient.cpp

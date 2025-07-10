@@ -1,0 +1,265 @@
+version: '3.8'
+
+services:
+  # Development environment
+  dataapi-sdk-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: dataapi-sdk-dev
+    volumes:
+      - .:/app
+      - dataapi-cache:/app/.cache
+      - dataapi-venv:/app/.venv
+    environment:
+      - DATAAPI_ENV=development
+      - PYTHONPATH=/app/src
+    ports:
+      - "8000:8000"
+      - "8080:8080"
+    networks:
+      - dataapi-network
+    command: bash
+    stdin_open: true
+    tty: true
+
+  # Testing environment
+  dataapi-sdk-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: testing
+    container_name: dataapi-sdk-test
+    volumes:
+      - .:/app
+      - test-results:/app/test-results
+    environment:
+      - DATAAPI_ENV=testing
+      - PYTHONPATH=/app/src
+    networks:
+      - dataapi-network
+    profiles:
+      - testing
+
+  # Documentation server
+  dataapi-sdk-docs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: docs
+    container_name: dataapi-sdk-docs
+    volumes:
+      - ./docs:/app/docs
+      - docs-build:/app/docs/_build
+    ports:
+      - "8001:8000"
+    networks:
+      - dataapi-network
+    profiles:
+      - docs
+
+  # Production-like environment
+  dataapi-sdk-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: dataapi-sdk-prod
+    environment:
+      - DATAAPI_ENV=production
+    networks:
+      - dataapi-network
+    profiles:
+      - production
+    restart: unless-stopped
+
+  # Jupyter notebook for interactive development
+  dataapi-sdk-jupyter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: dataapi-sdk-jupyter
+    volumes:
+      - .:/app
+      - jupyter-data:/home/dataapi/.jupyter
+    environment:
+      - DATAAPI_ENV=development
+      - PYTHONPATH=/app/src
+    ports:
+      - "8888:8888"
+    networks:
+      - dataapi-network
+    profiles:
+      - jupyter
+    command: >
+      bash -c "
+        uv add jupyter ipykernel notebook jupyterlab &&
+        uv run jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+      "
+
+  # Code quality checks
+  dataapi-sdk-lint:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: dataapi-sdk-lint
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONPATH=/app/src
+    networks:
+      - dataapi-network
+    profiles:
+      - quality
+    command: >
+      bash -c "
+        echo 'Running code quality checks...' &&
+        uv run ruff check src tests examples &&
+        uv run black --check src tests examples &&
+        uv run isort --check-only src tests examples &&
+        uv run mypy src/dataapi &&
+        uv run bandit -r src/ &&
+        echo 'All quality checks passed!'
+      "
+
+  # Performance testing
+  dataapi-sdk-perf:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: dataapi-sdk-perf
+    volumes:
+      - .:/app
+      - perf-results:/app/performance-results
+    environment:
+      - DATAAPI_ENV=performance
+      - PYTHONPATH=/app/src
+    networks:
+      - dataapi-network
+    profiles:
+      - performance
+    command: >
+      bash -c "
+        uv add pytest-benchmark &&
+        uv run pytest tests/ -m 'slow' --benchmark-only --benchmark-sort=mean
+      "
+
+  # Mock API server for testing
+  mock-api:
+    image: mockserver/mockserver:5.15.0
+    container_name: dataapi-mock-server
+    ports:
+      - "1080:1080"
+    environment:
+      - MOCKSERVER_PROPERTY_FILE=/config/mockserver.properties
+      - MOCKSERVER_INITIALIZATION_JSON_PATH=/config/expectations.json
+    volumes:
+      - ./tests/mock-server:/config
+    networks:
+      - dataapi-network
+    profiles:
+      - testing
+      - integration
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: dataapi-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - dataapi-network
+    profiles:
+      - cache
+      - integration
+    command: redis-server --appendonly yes
+
+  # PostgreSQL for integration testing (optional)
+  postgres:
+    image: postgres:15-alpine
+    container_name: dataapi-postgres
+    environment:
+      - POSTGRES_DB=dataapi_test
+      - POSTGRES_USER=dataapi
+      - POSTGRES_PASSWORD=dataapi_test_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./tests/sql:/docker-entrypoint-initdb.d
+    networks:
+      - dataapi-network
+    profiles:
+      - database
+      - integration
+
+  # Monitoring with Prometheus (optional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: dataapi-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    networks:
+      - dataapi-network
+    profiles:
+      - monitoring
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+
+  # Grafana for visualization (optional)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: dataapi-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana:/etc/grafana/provisioning
+    networks:
+      - dataapi-network
+    profiles:
+      - monitoring
+    depends_on:
+      - prometheus
+
+networks:
+  dataapi-network:
+    driver: bridge
+    name: dataapi-network
+
+volumes:
+  dataapi-cache:
+    name: dataapi-cache
+  dataapi-venv:
+    name: dataapi-venv
+  test-results:
+    name: dataapi-test-results
+  docs-build:
+    name: dataapi-docs-build
+  jupyter-data:
+    name: dataapi-jupyter-data
+  perf-results:
+    name: dataapi-perf-results
+  redis-data:
+    name: dataapi-redis-data
+  postgres-data:
+    name: dataapi-postgres-data
+  prometheus-data:
+    name: dataapi-prometheus-data
+  grafana-data:
+    name: dataapi-grafana-data

@@ -12,7 +12,7 @@ namespace client {
 AiProviderClient::AiProviderClient(std::shared_ptr<http::HttpClient> httpClient) : httpClient(httpClient) {
 }
 
-PageResult<AiProvider> AiProviderClient::listProviders(int page, int size) {
+PageResult<AiProvider> AiProviderClient::list(int page, int size, const std::string& type) {
     std::ostringstream oss;
     oss << "/ai-providers?page=" << page << "&size=" << size;
     
@@ -33,18 +33,19 @@ PageResult<AiProvider> AiProviderClient::listProviders(int page, int size) {
     
     result.totalElements = json["totalElements"].get<long>();
     result.totalPages = json["totalPages"].get<int>();
-    result.size = json["size"].get<int>();
-    result.number = json["number"].get<int>();
+    result.pageSize = json["size"].get<int>();
+    result.pageNumber = json["number"].get<int>();
+    result.empty = json.value("empty", false);
     result.first = json["first"].get<bool>();
     result.last = json["last"].get<bool>();
     
     return result;
 }
 
-AiProvider AiProviderClient::getProvider(const std::string& providerId) {
-    auto response = httpClient->get("/ai-providers/" + providerId);
+AiProvider AiProviderClient::getById(const std::string& id) {
+    auto response = httpClient->get("/ai-providers/" + id);
     if (response.statusCode == 404) {
-        throw std::runtime_error("AI provider not found: " + providerId);
+        throw std::runtime_error("AI provider not found: " + id);
     }
     if (response.statusCode != 200) {
         throw std::runtime_error("Failed to get AI provider");
@@ -56,11 +57,12 @@ AiProvider AiProviderClient::getProvider(const std::string& providerId) {
     return provider;
 }
 
-AiProviderTestResult AiProviderClient::testProvider(const std::string& providerId) {
-    Json emptyJson;
-    auto response = httpClient->post("/ai-providers/" + providerId + "/test", emptyJson);
+AiProviderTestResult AiProviderClient::testConfiguration(const AiProviderConfig& config) {
+    Json configJson;
+    to_json(configJson, config);
+    auto response = httpClient->post("/ai-providers/test", configJson);
     if (response.statusCode == 404) {
-        throw std::runtime_error("AI provider not found: " + providerId);
+        throw std::runtime_error("AI provider configuration test failed");
     }
     if (response.statusCode != 200) {
         throw std::runtime_error("Failed to test AI provider");
@@ -72,7 +74,7 @@ AiProviderTestResult AiProviderClient::testProvider(const std::string& providerI
     return result;
 }
 
-AiInvokeResponse AiProviderClient::invokeAi(const std::string& providerId, const AiInvokeRequest& request) {
+AiServiceResponse AiProviderClient::invoke(const std::string& providerId, const AiServiceRequest& request) {
     Json json;
     to_json(json, request);
     
@@ -85,7 +87,7 @@ AiInvokeResponse AiProviderClient::invokeAi(const std::string& providerId, const
     }
     
     Json responseJson = Json::parse(response.body);
-    AiInvokeResponse result;
+    AiServiceResponse result;
     from_json(responseJson, result);
     return result;
 }

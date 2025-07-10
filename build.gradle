@@ -36,35 +36,35 @@ subprojects {
 task buildAll {
     description = 'Build all SDKs'
     group = 'build'
-    dependsOn ':java-sdk:build', ':typescript-sdk:build', ':cpp-sdk:build'
+    dependsOn ':java-sdk:build', ':typescript-sdk:build', ':cpp-sdk:build', ':python-sdk:build'
 }
 
 // 测试所有SDK
 task testAll {
     description = 'Test all SDKs'
     group = 'verification'
-    dependsOn ':java-sdk:test', ':typescript-sdk:test', ':cpp-sdk:test'
+    dependsOn ':java-sdk:test', ':typescript-sdk:test', ':cpp-sdk:test', ':python-sdk:test'
 }
 
 // 清理所有SDK
 task cleanAll {
     description = 'Clean all SDKs'
     group = 'build'
-    dependsOn ':java-sdk:clean', ':typescript-sdk:clean', ':cpp-sdk:clean'
+    dependsOn ':java-sdk:clean', ':typescript-sdk:clean', ':cpp-sdk:clean', ':python-sdk:clean'
 }
 
 // 发布所有SDK
 task publishAll {
     description = 'Publish all SDKs'
     group = 'publishing'
-    dependsOn ':java-sdk:publish', ':typescript-sdk:publish', ':cpp-sdk:publish'
+    dependsOn ':java-sdk:publish', ':typescript-sdk:publish', ':cpp-sdk:publish', ':python-sdk:publish'
 }
 
 // 生成文档
 task generateDocs {
     description = 'Generate documentation for all SDKs'
     group = 'documentation'
-    dependsOn ':java-sdk:javadoc', ':typescript-sdk:generateDocs', ':cpp-sdk:generateDocs'
+    dependsOn ':java-sdk:javadoc', ':typescript-sdk:generateDocs', ':cpp-sdk:generateDocs', ':python-sdk:generateDocs'
 }
 
 // 运行示例
@@ -74,11 +74,101 @@ task runExamples {
     dependsOn ':examples:runAllExamples'
 }
 
+// C++特定任务
+task cppConfigure {
+    description = 'Configure C++ SDK with CMake'
+    group = 'cpp'
+    doLast {
+        exec {
+            workingDir 'cpp-sdk'
+            commandLine 'cmake', '-B', 'build', '-S', '.'
+        }
+    }
+}
+
+task cppBuild {
+    description = 'Build C++ SDK'
+    group = 'cpp'
+    dependsOn cppConfigure
+    doLast {
+        exec {
+            workingDir 'cpp-sdk'
+            commandLine 'cmake', '--build', 'build'
+        }
+    }
+}
+
+task cppClean {
+    description = 'Clean C++ SDK build files'
+    group = 'cpp'
+    doLast {
+        delete 'cpp-sdk/build'
+    }
+}
+
+// Python特定任务
+task pythonSync {
+    description = 'Sync Python dependencies with UV'
+    group = 'python'
+    doLast {
+        exec {
+            workingDir 'python-sdk'
+            commandLine 'uv', 'sync'
+        }
+    }
+}
+
+task pythonBuild {
+    description = 'Build Python SDK'
+    group = 'python'
+    dependsOn pythonSync
+    doLast {
+        exec {
+            workingDir 'python-sdk'
+            commandLine 'uv', 'run', 'python', '-m', 'build'
+        }
+    }
+}
+
+task pythonTest {
+    description = 'Test Python SDK'
+    group = 'python'
+    dependsOn pythonSync
+    doLast {
+        exec {
+            workingDir 'python-sdk'
+            commandLine 'uv', 'run', 'pytest'
+        }
+    }
+}
+
+task pythonLint {
+    description = 'Lint Python SDK'
+    group = 'python'
+    dependsOn pythonSync
+    doLast {
+        exec {
+            workingDir 'python-sdk'
+            commandLine 'uv', 'run', 'ruff', 'check', '.'
+        }
+    }
+}
+
+task pythonClean {
+    description = 'Clean Python SDK build files'
+    group = 'python'
+    doLast {
+        delete 'python-sdk/dist'
+        delete 'python-sdk/.pytest_cache'
+        delete 'python-sdk/__pycache__'
+    }
+}
+
 // 代码质量检查
 task checkQuality {
     description = 'Run quality checks for all SDKs'
     group = 'verification'
-    dependsOn ':java-sdk:checkstyleMain', ':typescript-sdk:lint', ':cpp-sdk:cppcheck'
+    dependsOn ':java-sdk:checkstyleMain', ':typescript-sdk:lint', ':cpp-sdk:cppcheck', ':python-sdk:lint'
 }
 
 // 版本信息
@@ -106,6 +196,16 @@ task versionInfo {
             println "CMake Version: ${cmakeVersion}"
         } catch (Exception e) {
             println "CMake: Not available"
+        }
+        
+        // 检查Python版本
+        try {
+            def pythonVersion = 'python3 --version'.execute().text.trim()
+            def uvVersion = 'uv --version'.execute().text.trim()
+            println "Python: ${pythonVersion}"
+            println "UV: ${uvVersion}"
+        } catch (Exception e) {
+            println "Python3/UV: Not available - required for Python SDK"
         }
     }
 }
@@ -151,6 +251,16 @@ task checkEnvironment {
         } catch (Exception e) {
             println "CMake: Not available - required for C++ SDK"
         }
+        
+        // Python环境
+         try {
+             def pythonVersion = 'python3 --version'.execute().text.trim()
+             def uvVersion = 'uv --version'.execute().text.trim()
+             println "Python: ${pythonVersion}"
+             println "UV: ${uvVersion}"
+         } catch (Exception e) {
+             println "Python3/UV: Not available - required for Python SDK"
+         }
         
         println "=== Environment Check Complete ==="
     }
@@ -200,4 +310,8 @@ clean {
     delete 'typescript-sdk/dist'
     delete 'typescript-sdk/node_modules'
     delete 'cpp-sdk/build'
+    delete 'python-sdk/dist'
+    delete 'python-sdk/.pytest_cache'
+    delete 'python-sdk/__pycache__'
+    delete 'python-sdk/.uv'
 }
