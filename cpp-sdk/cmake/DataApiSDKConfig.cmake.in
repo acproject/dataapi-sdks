@@ -1,0 +1,34 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+# 查找依赖
+find_dependency(CURL REQUIRED)
+find_dependency(OpenSSL REQUIRED)
+find_dependency(Threads REQUIRED)
+
+# 查找nlohmann/json
+find_dependency(nlohmann_json QUIET)
+if(NOT nlohmann_json_FOUND)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(NLOHMANN_JSON REQUIRED nlohmann_json)
+endif()
+
+# 包含目标文件
+include("${CMAKE_CURRENT_LIST_DIR}/DataApiSDKTargets.cmake")
+
+# 检查组件
+check_required_components(DataApiSDK)
+
+# 设置变量
+set(DataApiSDK_FOUND TRUE)
+set(DataApiSDK_VERSION @PROJECT_VERSION@)
+set(DataApiSDK_INCLUDE_DIRS "@PACKAGE_INCLUDE_INSTALL_DIR@")
+set(DataApiSDK_LIBRARIES DataApi::SDK::Static)
+
+# 提供便利的别名
+if(NOT TARGET DataApi::SDK)
+    add_library(DataApi::SDK ALIAS DataApi::SDK::Static)
+endif()
+
+message(STATUS "Found DataApiSDK: ${DataApiSDK_VERSION}")

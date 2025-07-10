@@ -1,0 +1,106 @@
+plugins {
+    id 'base'
+    id 'maven-publish'
+}
+
+description = 'DataAPI C++ SDK'
+
+// C++ SDK 构建配置
+task configureCMake(type: Exec) {
+    description = 'Configure CMake build'
+    commandLine 'cmake', '-B', 'build', '-S', '.', '-DCMAKE_BUILD_TYPE=Release'
+    workingDir projectDir
+}
+
+task buildCpp(type: Exec) {
+    description = 'Build C++ SDK'
+    dependsOn configureCMake
+    commandLine 'cmake', '--build', 'build', '--config', 'Release'
+    workingDir projectDir
+}
+
+task testCpp(type: Exec) {
+    description = 'Run C++ tests'
+    dependsOn buildCpp
+    commandLine 'ctest', '--test-dir', 'build', '--output-on-failure'
+    workingDir projectDir
+}
+
+task packageCpp(type: Exec) {
+    description = 'Package C++ SDK'
+    dependsOn buildCpp
+    commandLine 'cpack', '--config', 'build/CPackConfig.cmake'
+    workingDir projectDir
+}
+
+task installCpp(type: Exec) {
+    description = 'Install C++ SDK'
+    dependsOn buildCpp
+    commandLine 'cmake', '--install', 'build'
+    workingDir projectDir
+}
+
+// 定义构建任务依赖
+build.dependsOn buildCpp
+check.dependsOn testCpp
+
+// 清理任务
+clean {
+    delete 'build'
+    delete '*.tar.gz'
+    delete '*.zip'
+}
+
+// 发布配置
+publishing {
+    publications {
+        cpp(MavenPublication) {
+            artifactId = 'dataapi-cpp-sdk'
+            version = project.version
+            
+            // 添加构建产物
+            afterEvaluate {
+                def packageFile = fileTree(dir: projectDir, include: '*.tar.gz').singleFile
+                if (packageFile.exists()) {
+                    artifact(packageFile) {
+                        extension = 'tar.gz'
+                    }
+                }
+            }
+            
+            pom {
+                name = 'DataAPI C++ SDK'
+                description = 'C++ SDK for DataAPI'
+                url = 'https://github.com/owiseman/dataapi-client'
+                
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'https://opensource.org/licenses/MIT'
+                    }
+                }
+                
+                developers {
+                    developer {
+                        id = 'owiseman'
+                        name = 'DataAPI Team'
+                        email = 'dev@owiseman.com'
+                    }
+                }
+            }
+        }
+    }
+    
+    repositories {
+        maven {
+            url = project.hasProperty('mavenRepoUrl') ? project.mavenRepoUrl : 'https://repo1.maven.org/maven2/'
+            credentials {
+                username = project.hasProperty('mavenUsername') ? project.mavenUsername : ''
+                password = project.hasProperty('mavenPassword') ? project.mavenPassword : ''
+            }
+        }
+    }
+}
+
+// 确保打包任务在发布前执行
+publishCppPublicationToMavenRepository.dependsOn packageCpp

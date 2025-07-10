@@ -1,0 +1,203 @@
+plugins {
+    id 'base'
+    id 'maven-publish'
+}
+
+description = 'DataAPI SDK Suite - Multi-language client libraries for DataAPI'
+version = '1.0.0'
+group = 'com.owiseman.dataapi'
+
+// 全局配置
+allprojects {
+    group = rootProject.group
+    version = rootProject.version
+    
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+// 子项目配置
+subprojects {
+    apply plugin: 'base'
+    
+    // 通用任务
+    task printInfo {
+        doLast {
+            println "Project: ${project.name}"
+            println "Version: ${project.version}"
+            println "Description: ${project.description ?: 'No description'}"
+        }
+    }
+}
+
+// 构建所有SDK
+task buildAll {
+    description = 'Build all SDKs'
+    group = 'build'
+    dependsOn ':java-sdk:build', ':typescript-sdk:build', ':cpp-sdk:build'
+}
+
+// 测试所有SDK
+task testAll {
+    description = 'Test all SDKs'
+    group = 'verification'
+    dependsOn ':java-sdk:test', ':typescript-sdk:test', ':cpp-sdk:test'
+}
+
+// 清理所有SDK
+task cleanAll {
+    description = 'Clean all SDKs'
+    group = 'build'
+    dependsOn ':java-sdk:clean', ':typescript-sdk:clean', ':cpp-sdk:clean'
+}
+
+// 发布所有SDK
+task publishAll {
+    description = 'Publish all SDKs'
+    group = 'publishing'
+    dependsOn ':java-sdk:publish', ':typescript-sdk:publish', ':cpp-sdk:publish'
+}
+
+// 生成文档
+task generateDocs {
+    description = 'Generate documentation for all SDKs'
+    group = 'documentation'
+    dependsOn ':java-sdk:javadoc', ':typescript-sdk:generateDocs', ':cpp-sdk:generateDocs'
+}
+
+// 运行示例
+task runExamples {
+    description = 'Run examples for all SDKs'
+    group = 'application'
+    dependsOn ':examples:runAllExamples'
+}
+
+// 代码质量检查
+task checkQuality {
+    description = 'Run quality checks for all SDKs'
+    group = 'verification'
+    dependsOn ':java-sdk:checkstyleMain', ':typescript-sdk:lint', ':cpp-sdk:cppcheck'
+}
+
+// 版本信息
+task versionInfo {
+    description = 'Display version information'
+    group = 'help'
+    doLast {
+        println "DataAPI SDK Suite"
+        println "Version: ${version}"
+        println "Build Date: ${new Date()}"
+        println "Java Version: ${System.getProperty('java.version')}"
+        println "Gradle Version: ${gradle.gradleVersion}"
+        
+        // 检查Node.js版本
+        try {
+            def nodeVersion = 'node --version'.execute().text.trim()
+            println "Node.js Version: ${nodeVersion}"
+        } catch (Exception e) {
+            println "Node.js: Not available"
+        }
+        
+        // 检查CMake版本
+        try {
+            def cmakeVersion = 'cmake --version'.execute().text.split('\n')[0]
+            println "CMake Version: ${cmakeVersion}"
+        } catch (Exception e) {
+            println "CMake: Not available"
+        }
+    }
+}
+
+// 环境检查
+task checkEnvironment {
+    description = 'Check development environment'
+    group = 'help'
+    doLast {
+        println "=== Environment Check ==="
+        
+        // Java环境
+        println "Java Home: ${System.getProperty('java.home')}"
+        println "Java Version: ${System.getProperty('java.version')}"
+        
+        // Node.js环境
+        try {
+            def nodeVersion = 'node --version'.execute().text.trim()
+            def npmVersion = 'npm --version'.execute().text.trim()
+            println "Node.js: ${nodeVersion}"
+            println "npm: ${npmVersion}"
+        } catch (Exception e) {
+            println "Node.js/npm: Not available - required for TypeScript SDK"
+        }
+        
+        // C++环境
+        try {
+            def gccVersion = 'gcc --version'.execute().text.split('\n')[0]
+            println "GCC: ${gccVersion}"
+        } catch (Exception e) {
+            try {
+                def clangVersion = 'clang --version'.execute().text.split('\n')[0]
+                println "Clang: ${clangVersion}"
+            } catch (Exception e2) {
+                println "C++ Compiler: Not available - required for C++ SDK"
+            }
+        }
+        
+        // CMake
+        try {
+            def cmakeVersion = 'cmake --version'.execute().text.split('\n')[0]
+            println "CMake: ${cmakeVersion}"
+        } catch (Exception e) {
+            println "CMake: Not available - required for C++ SDK"
+        }
+        
+        println "=== Environment Check Complete ==="
+    }
+}
+
+// 初始化开发环境
+task setupDev {
+    description = 'Setup development environment'
+    group = 'build setup'
+    dependsOn checkEnvironment
+    
+    doLast {
+        println "Development environment setup complete"
+        println "You can now run: ./gradlew buildAll"
+    }
+}
+
+// CI/CD任务
+task ci {
+    description = 'Continuous Integration pipeline'
+    group = 'ci/cd'
+    dependsOn cleanAll, testAll, buildAll
+    
+    doLast {
+        println "CI pipeline completed successfully"
+    }
+}
+
+// 默认任务
+defaultTasks 'buildAll'
+
+// 包装器配置
+wrapper {
+    gradleVersion = '8.5'
+    distributionType = Wrapper.DistributionType.BIN
+}
+
+// 清理任务
+clean {
+    delete 'build'
+    delete '.gradle'
+    delete 'logs'
+    delete '*.log'
+    
+    // 清理各SDK的构建产物
+    delete 'java-sdk/build'
+    delete 'typescript-sdk/dist'
+    delete 'typescript-sdk/node_modules'
+    delete 'cpp-sdk/build'
+}

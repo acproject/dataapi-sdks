@@ -1,0 +1,80 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'signing'
+}
+
+description = 'DataAPI Java SDK'
+
+dependencies {
+    // HTTP客户端
+    implementation "org.apache.httpcomponents:httpclient:${httpclientVersion}"
+    implementation "org.apache.httpcomponents:httpcore:4.4.16"
+    
+    // JSON处理
+    implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
+    
+    // 日志
+    implementation "org.slf4j:slf4j-api:${slf4jVersion}"
+    
+    // 工具类
+    implementation 'org.apache.commons:commons-lang3:3.12.0'
+    implementation 'commons-codec:commons-codec:1.15'
+    
+    // 测试依赖
+    testImplementation "junit:junit:${junitVersion}"
+    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testImplementation 'org.slf4j:slf4j-simple:2.0.7'
+}
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+javadoc {
+    options.encoding = 'UTF-8'
+    options.charSet = 'UTF-8'
+    options.author = true
+    options.version = true
+    options.use = true
+    options.windowTitle = "DataAPI Java SDK ${version} API"
+    options.docTitle = "DataAPI Java SDK ${version} API"
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+            
+            pom {
+                name = 'DataAPI Java SDK'
+                description = 'Java SDK for DataAPI Backend Services'
+                url = 'https://github.com/owiseman/dataapi-client'
+                
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'https://opensource.org/licenses/MIT'
+                    }
+                }
+                
+                developers {
+                    developer {
+                        id = 'owiseman'
+                        name = 'DataAPI Team'
+                        email = 'dev@owiseman.com'
+                    }
+                }
+                
+                scm {
+                    connection = 'scm:git:git://github.com/owiseman/dataapi-client.git'
+                    developerConnection = 'scm:git:ssh://github.com:owiseman/dataapi-client.git'
+                    url = 'https://github.com/owiseman/dataapi-client/tree/main'
+                }
+            }
+        }
+    }
+}

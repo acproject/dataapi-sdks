@@ -1,0 +1,41 @@
+rootProject.name = 'dataapi-sdks'
+
+// 包含所有子项目
+include 'java-sdk'
+include 'typescript-sdk'
+include 'cpp-sdk'
+include 'examples'
+
+// 项目目录映射
+project(':java-sdk').projectDir = file('java-sdk')
+project(':typescript-sdk').projectDir = file('typescript-sdk')
+project(':cpp-sdk').projectDir = file('cpp-sdk')
+project(':examples').projectDir = file('examples')
+
+// 插件管理
+pluginsManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+    
+    plugins {
+        id 'java' version '8.5'
+        id 'maven-publish' version '8.5'
+        id 'com.github.node-gradle.node' version '7.0.1'
+        id 'checkstyle' version '8.5'
+    }
+}
+
+// 依赖解析管理
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+// 功能预览
+enableFeaturePreview('TYPESAFE_PROJECT_ACCESSORS')
+enableFeaturePreview('VERSION_CATALOGS')

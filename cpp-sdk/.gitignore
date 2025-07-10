@@ -1,0 +1,187 @@
+# Build directories
+build/
+build-*/
+out/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Testing/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+
+# Generated files
+*.cmake
+!CMakeLists.txt
+!cmake/*.cmake.in
+
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Linker output
+*.ilk
+*.map
+*.exp
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Kernel Module Compile Results
+*.mod*
+*.cmd
+.tmp_versions/
+modules.order
+Module.symvers
+Mkfile.old
+dkms.conf
+
+# IDE files
+.vscode/
+.vs/
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.sln
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# CLion
+.idea/
+cmake-build-*/
+
+# Qt Creator
+*.pro.user
+*.pro.user.*
+*.qbs.user
+*.qbs.user.*
+*.moc
+*.moc.cpp
+ui_*.h
+qrc_*.cpp
+
+# Xcode
+*.xcodeproj/
+*.xcworkspace/
+
+# Conan
+conanfile.txt
+conandata.yml
+conan.lock
+conanbuildinfo.*
+conaninfo.txt
+
+# vcpkg
+vcpkg_installed/
+
+# Third party dependencies
+third_party/
+!third_party/.gitkeep
+
+# Package files
+*.tar.gz
+*.zip
+*.deb
+*.rpm
+*.dmg
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Coverage reports
+*.gcov
+*.gcda
+*.gcno
+lcov.info
+coverage/
+
+# Profiling
+*.prof
+gmon.out
+
+# Documentation
+docs/html/
+docs/latex/
+docs/man/
+docs/rtf/
+docs/xml/
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# Local configuration
+.env
+.env.local
+config.local.*
+
+# Test results
+test_results/
+*.xml
+
+# Static analysis
+*.sarif
+
+# Memory debugging
+valgrind-out.txt
+*.memcheck
+
+# Address sanitizer
+*.asan
+
+# Thread sanitizer
+*.tsan
+
+# Undefined behavior sanitizer
+*.ubsan

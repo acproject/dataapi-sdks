@@ -1,0 +1,100 @@
+plugins {
+    id 'base'
+    id 'maven-publish'
+}
+
+description = 'DataAPI TypeScript SDK'
+
+// TypeScript SDK 构建配置
+task installDependencies(type: Exec) {
+    description = 'Install npm dependencies'
+    commandLine 'npm', 'install'
+    workingDir projectDir
+}
+
+task buildTypeScript(type: Exec) {
+    description = 'Build TypeScript SDK'
+    dependsOn installDependencies
+    commandLine 'npm', 'run', 'build'
+    workingDir projectDir
+}
+
+task testTypeScript(type: Exec) {
+    description = 'Run TypeScript tests'
+    dependsOn buildTypeScript
+    commandLine 'npm', 'test'
+    workingDir projectDir
+}
+
+task lintTypeScript(type: Exec) {
+    description = 'Lint TypeScript code'
+    dependsOn installDependencies
+    commandLine 'npm', 'run', 'lint'
+    workingDir projectDir
+}
+
+task packageTypeScript(type: Exec) {
+    description = 'Package TypeScript SDK'
+    dependsOn buildTypeScript
+    commandLine 'npm', 'pack'
+    workingDir projectDir
+}
+
+// 定义构建任务依赖
+build.dependsOn buildTypeScript
+check.dependsOn testTypeScript, lintTypeScript
+
+// 清理任务
+clean {
+    delete 'node_modules'
+    delete 'dist'
+    delete '*.tgz'
+}
+
+// 发布配置
+publishing {
+    publications {
+        typescript(MavenPublication) {
+            artifactId = 'dataapi-typescript-sdk'
+            version = project.version
+            
+            artifact(file("${projectDir}/dataapi-typescript-sdk-${project.version}.tgz")) {
+                extension = 'tgz'
+            }
+            
+            pom {
+                name = 'DataAPI TypeScript SDK'
+                description = 'TypeScript SDK for DataAPI'
+                url = 'https://github.com/owiseman/dataapi-client'
+                
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'https://opensource.org/licenses/MIT'
+                    }
+                }
+                
+                developers {
+                    developer {
+                        id = 'owiseman'
+                        name = 'DataAPI Team'
+                        email = 'dev@owiseman.com'
+                    }
+                }
+            }
+        }
+    }
+    
+    repositories {
+        maven {
+            url = project.hasProperty('mavenRepoUrl') ? project.mavenRepoUrl : 'https://repo1.maven.org/maven2/'
+            credentials {
+                username = project.hasProperty('mavenUsername') ? project.mavenUsername : ''
+                password = project.hasProperty('mavenPassword') ? project.mavenPassword : ''
+            }
+        }
+    }
+}
+
+// 确保打包任务在发布前执行
+publishTypescriptPublicationToMavenRepository.dependsOn packageTypeScript

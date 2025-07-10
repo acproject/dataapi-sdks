@@ -1,0 +1,42 @@
+plugins {
+    id 'base'
+}
+
+description = 'DataAPI SDK Examples'
+
+// Java示例
+task runJavaExample(type: JavaExec) {
+    description = 'Run Java SDK example'
+    dependsOn ':java-sdk:build'
+    classpath = project(':java-sdk').sourceSets.main.runtimeClasspath
+    mainClass = 'com.owiseman.dataapi.sdk.examples.BasicExample'
+    workingDir projectDir
+}
+
+// TypeScript示例
+task runTypeScriptExample(type: Exec) {
+    description = 'Run TypeScript SDK example'
+    dependsOn ':typescript-sdk:build'
+    commandLine 'npm', 'run', 'example'
+    workingDir file('../typescript-sdk')
+}
+
+// C++示例
+task runCppExample(type: Exec) {
+    description = 'Run C++ SDK example'
+    dependsOn ':cpp-sdk:build'
+    commandLine './build/example'
+    workingDir file('../cpp-sdk')
+}
+
+// 运行所有示例
+task runAllExamples {
+    description = 'Run all SDK examples'
+    dependsOn runJavaExample, runTypeScriptExample, runCppExample
+}
+
+// 清理任务
+clean {
+    delete 'logs'
+    delete '*.log'
+}
